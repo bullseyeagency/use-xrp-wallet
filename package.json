@@ -12,6 +12,8 @@
     "lint": "eslint src"
   },
   "dependencies": {
+    "@electron-toolkit/tsconfig": "^2.0.0",
+    "@electron-toolkit/utils": "^4.0.0",
     "@noble/secp256k1": "^2.1.0",
     "@web3auth/base": "^8.0.0",
     "@web3auth/modal": "^8.0.0",
@@ -19,6 +21,8 @@
     "@web3auth/xrpl-provider": "^8.0.0",
     "express": "^4.18.2",
     "keytar": "^7.9.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
     "xrpl": "^3.0.0"
   },
   "devDependencies": {
