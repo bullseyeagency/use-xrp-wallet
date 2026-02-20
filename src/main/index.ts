@@ -1,0 +1,66 @@
+import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { join } from 'path'
+import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { startApiServer } from './api'
+import { keychainGet, keychainSet, keychainDelete } from './keychain'
+
+function createWindow(): BrowserWindow {
+  const win = new BrowserWindow({
+    width: 420,
+    height: 680,
+    resizable: false,
+    titleBarStyle: 'hiddenInset',
+    backgroundColor: '#000000',
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false,
+    },
+  })
+
+  win.on('ready-to-show', () => win.show())
+
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url)
+    return { action: 'deny' }
+  })
+
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    win.loadURL(process.env['ELECTRON_RENDERER_URL'])
+  } else {
+    win.loadFile(join(__dirname, '../renderer/index.html'))
+  }
+
+  return win
+}
+
+app.whenReady().then(() => {
+  electronApp.setAppUserModelId('com.usexrp.wallet')
+
+  app.on('browser-window-created', (_, window) => {
+    optimizer.watchWindowShortcuts(window)
+  })
+
+  // IPC handlers for keychain
+  ipcMain.handle('keychain:set', async (_, key: string, value: string) => {
+    await keychainSet(key, value)
+  })
+  ipcMain.handle('keychain:get', async (_, key: string) => {
+    return await keychainGet(key)
+  })
+  ipcMain.handle('keychain:delete', async (_, key: string) => {
+    await keychainDelete(key)
+  })
+
+  // Start local API server for OpenClaw
+  startApiServer()
+
+  createWindow()
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+  })
+})
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit()
+})
