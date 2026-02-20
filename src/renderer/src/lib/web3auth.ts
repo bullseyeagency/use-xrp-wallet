@@ -1,39 +1,49 @@
 import { Web3Auth } from '@web3auth/modal'
 import { XrplPrivateKeyProvider } from '@web3auth/xrpl-provider'
-import { CHAIN_NAMESPACES, WEB3AUTH_NETWORK } from '@web3auth/base'
+import { CHAIN_NAMESPACES, WEB3AUTH_NETWORK, type CustomChainConfig } from '@web3auth/base'
 import { WEB3AUTH_CLIENT_ID } from './config'
 
-const chainConfig = {
+export const XRPL_MAINNET: CustomChainConfig = {
   chainNamespace: CHAIN_NAMESPACES.OTHER,
   chainId: '0x1',
   rpcTarget: 'https://xrplcluster.com',
+  wsTarget: 'wss://xrplcluster.com',
   displayName: 'XRPL Mainnet',
   blockExplorerUrl: 'https://livenet.xrpl.org',
   ticker: 'XRP',
   tickerName: 'XRPL',
 }
 
-let instance: Web3Auth | null = null
-
-export function getWeb3Auth(): Web3Auth {
-  if (!instance) {
-    const privateKeyProvider = new XrplPrivateKeyProvider({ config: { chainConfig } })
-    instance = new Web3Auth({
+export function buildWeb3AuthConfig() {
+  return {
+    web3AuthOptions: {
       clientId: WEB3AUTH_CLIENT_ID,
       web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_MAINNET,
-      privateKeyProvider,
-    })
+      chains: [XRPL_MAINNET],
+      defaultChainId: '0x1',
+    },
   }
-  return instance
 }
 
-export async function getXrplAddress(): Promise<string | null> {
-  const web3auth = getWeb3Auth()
-  if (!web3auth.provider) return null
+// After connect(), extract the XRPL address from the provider
+export async function getXrplAddressFromProvider(
+  provider: { request: (args: { method: string }) => Promise<unknown> }
+): Promise<string | null> {
   try {
-    const accounts = await web3auth.provider.request<never, string[]>({ method: 'xrpl_getAccounts' })
+    // Get the raw private key Web3Auth derived from social login
+    const privKey = await provider.request({ method: 'private_key' }) as string
+    if (!privKey) return null
+
+    // Wrap it in XrplPrivateKeyProvider to get XRPL-specific methods
+    const xrplProvider = await XrplPrivateKeyProvider.getProviderInstance({
+      privKey,
+      chainConfig: XRPL_MAINNET,
+    })
+
+    const accounts = await xrplProvider.request({ method: 'xrpl_getAccounts' }) as string[]
     return accounts?.[0] ?? null
-  } catch {
+  } catch (err) {
+    console.error('getXrplAddress error:', err)
     return null
   }
 }

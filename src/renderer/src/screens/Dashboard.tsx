@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
-import { getWeb3Auth, getXrplAddress } from '../lib/web3auth'
+import { useWeb3Auth } from '@web3auth/modal/react'
+import { useWeb3AuthConnect } from '@web3auth/modal/react'
+import { useWeb3AuthDisconnect } from '@web3auth/modal/react'
+import { getXrplAddressFromProvider } from '../lib/web3auth'
 import { WEB3AUTH_CLIENT_ID } from '../lib/config'
 
 interface Balance {
@@ -19,12 +22,14 @@ export default function Dashboard() {
   const [agentCopied, setAgentCopied] = useState(false)
   const [apiStatus, setApiStatus] = useState<ApiStatus>('checking')
 
-  // Human wallet
+  // Human wallet — Web3Auth v10 hooks
+  const { provider } = useWeb3Auth()
+  const { connect, isConnected, loading: humanLoading } = useWeb3AuthConnect()
+  const { disconnect } = useWeb3AuthDisconnect()
   const [humanAddress, setHumanAddress] = useState<string | null>(null)
-  const [humanConnected, setHumanConnected] = useState(false)
-  const [humanLoading, setHumanLoading] = useState(false)
   const [humanCopied, setHumanCopied] = useState(false)
 
+  // Load agent wallet data
   useEffect(() => {
     async function load() {
       const addr = await (window as any).keychain.get('agent_address')
@@ -49,30 +54,29 @@ export default function Dashboard() {
     load()
   }, [])
 
+  // Resolve XRPL address once provider is available
+  useEffect(() => {
+    if (isConnected && provider) {
+      getXrplAddressFromProvider(provider).then(addr => {
+        if (addr) setHumanAddress(addr)
+      })
+    } else {
+      setHumanAddress(null)
+    }
+  }, [isConnected, provider])
+
   async function connectHumanWallet() {
-    setHumanLoading(true)
     try {
-      const web3auth = getWeb3Auth()
-      await web3auth.initModal()
-      await web3auth.connect()
-      const addr = await getXrplAddress()
-      if (addr) {
-        setHumanAddress(addr)
-        setHumanConnected(true)
-      }
+      await connect()
     } catch (err) {
-      console.error('Web3Auth error:', err)
-    } finally {
-      setHumanLoading(false)
+      console.error('Connect error:', err)
     }
   }
 
   async function disconnectHumanWallet() {
     try {
-      await getWeb3Auth().logout()
+      await disconnect()
     } catch {}
-    setHumanConnected(false)
-    setHumanAddress(null)
   }
 
   function copyAgent() {
@@ -169,7 +173,7 @@ export default function Dashboard() {
             GET CLIENT ID →
           </a>
         </div>
-      ) : humanConnected && humanAddress ? (
+      ) : isConnected && humanAddress ? (
         <div className="border border-purple-800/40 rounded-2xl p-5 bg-zinc-950/60">
           <p className="text-xs font-mono text-zinc-500 mb-2">ADDRESS</p>
           <p className="text-purple-400 font-mono text-xs break-all mb-3">{humanAddress}</p>
