@@ -89,7 +89,15 @@ export function startApiServer() {
     res.json({ status: 'ok', service: 'use-xrp-wallet' })
   })
 
-  app.listen(PORT, '127.0.0.1', () => {
+  const server = app.listen(PORT, '127.0.0.1', () => {
     console.log(`UseXRP Wallet API running on localhost:${PORT}`)
+  })
+
+  server.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EADDRINUSE') {
+      console.log(`Port ${PORT} already in use — wallet API already running`)
+    } else {
+      console.error('Wallet API error:', err)
+    }
   })
 }

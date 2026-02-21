@@ -36,6 +36,11 @@ function createWindow(): BrowserWindow {
   return win
 }
 
+// Single instance lock — quit if another instance is already running
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+}
+
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.usexrp.wallet')
 
