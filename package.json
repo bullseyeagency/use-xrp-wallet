@@ -46,9 +46,11 @@
   "build": {
     "appId": "com.usexrp.wallet",
     "productName": "UseXRP Wallet",
+    "icon": "resources/icon.icns",
     "mac": {
       "category": "public.app-category.finance",
-      "target": "dmg"
+      "target": "dmg",
+      "icon": "resources/icon.icns"
     },
     "directories": {
       "output": "dist"
