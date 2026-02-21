@@ -18,7 +18,7 @@ export function buildWeb3AuthConfig() {
   return {
     web3AuthOptions: {
       clientId: WEB3AUTH_CLIENT_ID,
-      web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_MAINNET,
+      web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_DEVNET,
       chains: [XRPL_MAINNET],
       defaultChainId: '0x1',
     },
