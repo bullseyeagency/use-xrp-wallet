@@ -86,9 +86,13 @@ export default function Dashboard() {
 
   async function connectHumanWallet() {
     try {
-      await connect({ mfaLevel: 'none' } as any)
-    } catch (err) {
-      console.error('Connect error:', err)
+      // Use connectTo with auth connector to bypass MFA on localhost
+      await connectTo('openlogin' as any, { mfaLevel: 'none' })
+    } catch {
+      // Fallback to standard connect
+      try { await connect() } catch (err) {
+        console.error('Connect error:', err)
+      }
     }
   }
 
