@@ -23,6 +23,14 @@ function createWindow(): BrowserWindow {
   })
 
   win.webContents.setWindowOpenHandler(({ url }) => {
+    // Allow Web3Auth and OAuth popups to open inside Electron
+    // so postMessage callbacks work correctly
+    const isOAuth = url.includes('web3auth.io') ||
+      url.includes('accounts.google.com') ||
+      url.includes('auth.web3auth.io') ||
+      url.includes('discord.com/oauth')
+    if (isOAuth) return { action: 'allow' }
+    // All other external links → system browser
     shell.openExternal(url)
     return { action: 'deny' }
   })
