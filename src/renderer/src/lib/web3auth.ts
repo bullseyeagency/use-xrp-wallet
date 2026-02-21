@@ -29,15 +29,20 @@ export function buildWeb3AuthConfig() {
 export async function getXrplAddressFromProvider(
   provider: { request: (args: { method: string }) => Promise<unknown> }
 ): Promise<string | null> {
+  // Try calling xrpl_getAccounts directly — works if Web3Auth set up the XRPL provider
   try {
-    // Get the raw private key Web3Auth derived from social login
+    const accounts = await provider.request({ method: 'xrpl_getAccounts' }) as string[]
+    if (accounts?.[0]) return accounts[0]
+  } catch {}
+
+  // Fallback: get raw private key and wrap in XrplPrivateKeyProvider
+  try {
     const privKey = await provider.request({ method: 'private_key' }) as string
     if (!privKey) return null
 
-    // Wrap it in XrplPrivateKeyProvider to get XRPL-specific methods
     const xrplProvider = await XrplPrivateKeyProvider.getProviderInstance({
       privKey,
-      chainConfig: XRPL_MAINNET,
+      chainConfig: { ...XRPL_MAINNET, chainNamespace: 'xrpl' as any },
     })
 
     const accounts = await xrplProvider.request({ method: 'xrpl_getAccounts' }) as string[]

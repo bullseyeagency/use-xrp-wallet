@@ -1,6 +1,7 @@
 import express from 'express'
+import cors from 'cors'
 import { keychainGet } from './keychain'
-import { Client, Wallet, xrpToDrops } from 'xrpl'
+import { Client, Wallet } from 'xrpl'
 
 const PORT = process.env.WALLET_API_PORT || 7373
 const TOKEN = process.env.WALLET_API_TOKEN || 'dev-token'
@@ -24,6 +25,7 @@ async function getWallet(): Promise<Wallet> {
 
 export function startApiServer() {
   const app = express()
+  app.use(cors({ origin: '*' }))
   app.use(express.json())
 
   // GET /balance
