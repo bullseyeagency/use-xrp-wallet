@@ -118,9 +118,9 @@ export default function Dashboard() {
           <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white font-black text-xs">X</div>
           <span className="text-white font-black text-base">UseXRP Wallet</span>
         </div>
-        <div className="flex items-center gap-1.5 text-xs font-mono text-green-400">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-          MAINNET
+        <div className="flex items-center gap-1.5 text-xs font-mono text-yellow-400">
+          <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
+          TESTNET
         </div>
       </div>
 
