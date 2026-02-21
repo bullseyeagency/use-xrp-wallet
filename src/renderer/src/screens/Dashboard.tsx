@@ -86,7 +86,7 @@ export default function Dashboard() {
 
   async function connectHumanWallet() {
     try {
-      await connect()
+      await connect({ mfaLevel: 'none' } as any)
     } catch (err) {
       console.error('Connect error:', err)
     }
