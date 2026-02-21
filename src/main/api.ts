@@ -5,7 +5,8 @@ import { Client, Wallet } from 'xrpl'
 
 const PORT = process.env.WALLET_API_PORT || 7373
 const TOKEN = process.env.WALLET_API_TOKEN || 'dev-token'
-const XRPL_URL = 'wss://xrplcluster.com'
+const XRPL_URL = process.env.XRPL_URL || 'wss://s.altnet.rippletest.net:51233'
+const NETWORK = XRPL_URL.includes('altnet') ? 'testnet' : 'mainnet'
 
 // Auth middleware
 function auth(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -99,9 +100,29 @@ export function startApiServer() {
     }
   })
 
+  // POST /faucet — fund agent wallet from XRPL testnet faucet (testnet only)
+  app.post('/faucet', auth, async (req, res) => {
+    if (NETWORK !== 'testnet') {
+      res.status(400).json({ error: 'Faucet only available on testnet' })
+      return
+    }
+    try {
+      const wallet = await getWallet()
+      const response = await fetch('https://faucet.altnet.rippletest.net/accounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ destination: wallet.address }),
+      })
+      const data = await response.json() as any
+      res.json({ address: wallet.address, funded: true, balance: data.balance ?? data.account?.balance })
+    } catch (err: any) {
+      res.status(500).json({ error: err.message })
+    }
+  })
+
   // Health check (no auth — OpenClaw can check if wallet is running)
   app.get('/health', (req, res) => {
-    res.json({ status: 'ok', service: 'use-xrp-wallet' })
+    res.json({ status: 'ok', service: 'use-xrp-wallet', network: NETWORK })
   })
 
   const server = app.listen(PORT, '127.0.0.1', () => {

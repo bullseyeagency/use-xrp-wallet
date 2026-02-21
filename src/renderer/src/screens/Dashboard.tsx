@@ -10,6 +10,7 @@ interface Balance {
   drops: number
   xrp: number
   usd: number
+  activated: boolean
 }
 
 type ApiStatus = 'checking' | 'ready' | 'error'
@@ -21,6 +22,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [agentCopied, setAgentCopied] = useState(false)
   const [apiStatus, setApiStatus] = useState<ApiStatus>('checking')
+  const [fauceting, setFauceting] = useState(false)
 
   // Human wallet — Web3Auth v10 hooks
   const { provider } = useWeb3Auth()
@@ -29,30 +31,47 @@ export default function Dashboard() {
   const [humanAddress, setHumanAddress] = useState<string | null>(null)
   const [humanCopied, setHumanCopied] = useState(false)
 
+  async function loadBalance() {
+    try {
+      const res = await fetch('http://localhost:7373/balance', {
+        headers: { Authorization: `Bearer dev-token` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setBalance(data)
+        setApiStatus('ready')
+      } else {
+        setApiStatus('error')
+      }
+    } catch {
+      setApiStatus('error')
+    }
+  }
+
   // Load agent wallet data
   useEffect(() => {
     async function load() {
       const addr = await (window as any).keychain.get('agent_address')
       setAgentAddress(addr || '')
-      try {
-        const res = await fetch('http://localhost:7373/balance', {
-          headers: { Authorization: `Bearer dev-token` },
-        })
-        if (res.ok) {
-          const data = await res.json()
-          setBalance(data)
-          setApiStatus('ready')
-        } else {
-          setApiStatus('error')
-        }
-      } catch {
-        setApiStatus('error')
-      } finally {
-        setLoading(false)
-      }
+      await loadBalance()
+      setLoading(false)
     }
     load()
   }, [])
+
+  async function requestFaucet() {
+    setFauceting(true)
+    try {
+      await fetch('http://localhost:7373/faucet', {
+        method: 'POST',
+        headers: { Authorization: `Bearer dev-token` },
+      })
+      // Wait a few seconds for the ledger to settle then refresh
+      await new Promise(r => setTimeout(r, 4000))
+      await loadBalance()
+    } catch {}
+    setFauceting(false)
+  }
 
   // Resolve XRPL address once provider is available
   useEffect(() => {
@@ -127,6 +146,20 @@ export default function Dashboard() {
           </>
         )}
       </div>
+
+      {/* Faucet — testnet only, unfunded wallet */}
+      {balance && !balance.activated && (
+        <div className="border border-yellow-800/40 rounded-2xl p-4 mb-3 bg-zinc-950/60">
+          <p className="text-yellow-400 text-xs font-mono mb-3">WALLET NOT ACTIVATED — needs 10 XRP reserve</p>
+          <button
+            onClick={requestFaucet}
+            disabled={fauceting}
+            className="w-full bg-yellow-700 hover:bg-yellow-600 disabled:opacity-50 text-white font-black py-2.5 rounded-xl text-xs transition-colors"
+          >
+            {fauceting ? 'REQUESTING TESTNET XRP...' : 'REQUEST FROM TESTNET FAUCET'}
+          </button>
+        </div>
+      )}
 
       {/* Agent address */}
       <div className="border border-zinc-800 rounded-2xl p-5 mb-3 bg-zinc-950/60">
