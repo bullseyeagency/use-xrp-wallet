@@ -22,11 +22,9 @@ class RootErrorBoundary extends Component<{ children: ReactNode }, { error: stri
 }
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-  <React.StrictMode>
-    <RootErrorBoundary>
-      <Web3AuthProvider config={buildWeb3AuthConfig()}>
-        <App />
-      </Web3AuthProvider>
-    </RootErrorBoundary>
-  </React.StrictMode>
+  <RootErrorBoundary>
+    <Web3AuthProvider config={buildWeb3AuthConfig()}>
+      <App />
+    </Web3AuthProvider>
+  </RootErrorBoundary>
 )
