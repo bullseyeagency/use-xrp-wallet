@@ -34,19 +34,32 @@ export function startApiServer() {
       const wallet = await getWallet()
       const client = new Client(XRPL_URL)
       await client.connect()
-      const info = await client.request({
-        command: 'account_info',
-        account: wallet.address,
-        ledger_index: 'current',
-      })
-      await client.disconnect()
-      const drops = Number(info.result.account_data.Balance)
-      res.json({
-        address: wallet.address,
-        drops,
-        xrp: drops / 1_000_000,
-        usd: (drops / 1_000_000) * 1.40,
-      })
+      try {
+        const info = await client.request({
+          command: 'account_info',
+          account: wallet.address,
+          ledger_index: 'current',
+        })
+        const drops = Number(info.result.account_data.Balance)
+        res.json({
+          address: wallet.address,
+          drops,
+          xrp: drops / 1_000_000,
+          usd: (drops / 1_000_000) * 1.40,
+          activated: true,
+        })
+      } catch (e: any) {
+        // Account not funded yet — return zero balance
+        res.json({
+          address: wallet.address,
+          drops: 0,
+          xrp: 0,
+          usd: 0,
+          activated: false,
+        })
+      } finally {
+        await client.disconnect()
+      }
     } catch (err: any) {
       res.status(500).json({ error: err.message })
     }

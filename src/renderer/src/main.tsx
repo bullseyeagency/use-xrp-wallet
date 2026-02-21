@@ -1,3 +1,4 @@
+import './polyfills'
 import React, { Component, type ReactNode } from 'react'
 import ReactDOM from 'react-dom/client'
 import { Web3AuthProvider } from '@web3auth/modal/react'
